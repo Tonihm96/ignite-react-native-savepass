@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -11,7 +11,7 @@ import {
   Metadata,
   Title,
   TotalPassCount,
-  LoginList,
+  LoginList
 } from './styles';
 
 interface LoginDataProps {
@@ -19,7 +19,7 @@ interface LoginDataProps {
   service_name: string;
   email: string;
   password: string;
-};
+}
 
 type LoginListDataProps = LoginDataProps[];
 
@@ -30,20 +30,37 @@ export function Home() {
 
   async function loadData() {
     const dataKey = '@savepass:logins';
+
     // Get asyncStorage data, use setSearchListData and setData
+    const loadedData = await AsyncStorage.getItem(dataKey);
+
+    setData(JSON.parse(loadedData || '[]'));
+    setSearchListData(JSON.parse(loadedData || '[]'));
   }
 
   function handleFilterLoginData() {
     // Filter results inside data, save with setSearchListData
+    searchText.trim().length > 0 &&
+      setSearchListData(
+        data.filter(item =>
+          item.service_name.toLowerCase().includes(searchText.toLowerCase())
+        )
+      );
   }
 
   function handleChangeInputText(text: string) {
+    // If there's no text, searchdata will reset
+    !text && setSearchListData(data);
+
     // Update searchText value
+    setSearchText(text);
   }
 
-  useFocusEffect(useCallback(() => {
-    loadData();
-  }, []));
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   return (
     <>
@@ -55,12 +72,11 @@ export function Home() {
       />
       <Container>
         <SearchBar
-          placeholder="Qual senha você procura?"
+          placeholder='Qual senha você procura?'
           onChangeText={handleChangeInputText}
           value={searchText}
-          returnKeyType="search"
+          returnKeyType='search'
           onSubmitEditing={handleFilterLoginData}
-
           onSearchButtonPress={handleFilterLoginData}
         />
 
@@ -69,23 +85,24 @@ export function Home() {
           <TotalPassCount>
             {searchListData.length
               ? `${`${searchListData.length}`.padStart(2, '0')} ao total`
-              : 'Nada a ser exibido'
-            }
+              : 'Nada a ser exibido'}
           </TotalPassCount>
         </Metadata>
 
         <LoginList
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           data={searchListData}
           renderItem={({ item: loginData }) => {
-            return <LoginDataItem
-              service_name={loginData.service_name}
-              email={loginData.email}
-              password={loginData.password}
-            />
+            return (
+              <LoginDataItem
+                service_name={loginData.service_name}
+                email={loginData.email}
+                password={loginData.password}
+              />
+            );
           }}
         />
       </Container>
     </>
-  )
+  );
 }
