@@ -12,10 +12,7 @@ import { Header } from '../../components/Header';
 import { Input } from '../../components/Form/Input';
 import { Button } from '../../components/Form/Button';
 
-import {
-  Container,
-  Form
-} from './styles';
+import { Container, Form } from './styles';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 interface FormData {
@@ -25,26 +22,41 @@ interface FormData {
 }
 
 const schema = Yup.object().shape({
-  service_name: Yup.string().required('Nome do serviço é obrigatório!'),
-  email: Yup.string().email('Não é um email válido').required('Email é obrigatório!'),
-  password: Yup.string().required('Senha é obrigatória!'),
-})
+  service_name: Yup.string()
+    .required('Nome do serviço é obrigatório!')
+    .test(
+      'empty-service_name-check',
+      'Nome do serviço não é válido',
+      service_name => String(service_name).trim().length > 0
+    ),
+  email: Yup.string()
+    .email('Não é um email válido')
+    .required('Email é obrigatório!'),
+  password: Yup.string()
+    .required('Senha é obrigatória!')
+    .test(
+      'empty-password-check',
+      'Senha não é válida',
+      password => String(password).trim().length > 0
+    )
+});
 
 type RootStackParamList = {
   Home: undefined;
   RegisterLoginData: undefined;
 };
 
-type NavigationProps = StackNavigationProp<RootStackParamList, 'RegisterLoginData'>;
+type NavigationProps = StackNavigationProp<
+  RootStackParamList,
+  'RegisterLoginData'
+>;
 
 export function RegisterLoginData() {
-  const { navigate } = useNavigation<NavigationProps>()
+  const { navigate } = useNavigation<NavigationProps>();
   const {
     control,
     handleSubmit,
-    formState: {
-      errors
-    }
+    formState: { errors }
   } = useForm({
     resolver: yupResolver(schema)
   });
@@ -53,11 +65,20 @@ export function RegisterLoginData() {
     const newLoginData = {
       id: String(uuid.v4()),
       ...formData
-    }
+    };
 
     const dataKey = '@savepass:logins';
 
     // Save data on AsyncStorage and navigate to 'Home' screen
+    const data = await AsyncStorage.getItem(dataKey);
+    const parsedData = JSON.parse(data || '[]');
+
+    AsyncStorage.setItem(
+      dataKey,
+      JSON.stringify([...parsedData, newLoginData])
+    );
+
+    navigate('Home');
   }
 
   return (
@@ -70,38 +91,29 @@ export function RegisterLoginData() {
       <Container>
         <Form>
           <Input
-            testID="service-name-input"
-            title="Nome do serviço"
-            name="service_name"
-            error={
-              // Replace here with real content
-              'Has error ? show error message'
-            }
+            testID='service-name-input'
+            title='Nome do serviço'
+            name='service_name'
+            error={errors.service_name && errors.service_name.message}
             control={control}
-            autoCapitalize="sentences"
+            autoCapitalize='sentences'
             autoCorrect
           />
           <Input
-            testID="email-input"
-            title="E-mail ou usuário"
-            name="email"
-            error={
-              // Replace here with real content
-              'Has error ? show error message'
-            }
+            testID='email-input'
+            title='E-mail ou usuário'
+            name='email'
+            error={errors.email && errors.email.message}
             control={control}
             autoCorrect={false}
-            autoCapitalize="none"
-            keyboardType="email-address"
+            autoCapitalize='none'
+            keyboardType='email-address'
           />
           <Input
-            testID="password-input"
-            title="Senha"
-            name="password"
-            error={
-              // Replace here with real content
-              'Has error ? show error message'
-            }
+            testID='password-input'
+            title='Senha'
+            name='password'
+            error={errors.password && errors.password.message}
             control={control}
             secureTextEntry
           />
@@ -110,11 +122,11 @@ export function RegisterLoginData() {
             style={{
               marginTop: RFValue(8)
             }}
-            title="Salvar"
+            title='Salvar'
             onPress={handleSubmit(handleRegister)}
           />
         </Form>
       </Container>
     </KeyboardAvoidingView>
-  )
+  );
 }
